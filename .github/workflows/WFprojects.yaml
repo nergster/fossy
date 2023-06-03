@@ -281,7 +281,7 @@ jobs:
         uses: LeDuble/labeler@master
         with:
           add-labels: ${{ env.unlabeled }}
-          ignore-if-labeled: true
+          # ignore-if-labeled: true # Add unlabeled to all new PRs
 
       - name: If unassigned, adds {{ env.unassigned }} label # step 3
         uses: LeDuble/labeler@master
