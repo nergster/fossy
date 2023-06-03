@@ -51,13 +51,13 @@ body:
     description: Pick one that describe the issue.
     multiple: false
     options:
-      - Documentation 📝 - Changes to the documentation.
+      - Docs 📝 - Changes to the documentation only.
       - Feature 🆕 - A new feature.
-      - Style 🖌️ - Changes to formatting (e.g. the code is missing semicolons).
+      - Style 🖌️ - Changes to formatting. (e.g. spreading lines, tabbing, keyword casing...)
       - Test ☑️ - Adding/correcting existing tests.
-      - Refactor 🔁 - A code change which isn't a bug fix or adds a feature. It's a restructure of the code without changing the functionality.
-      - BugFix 🐛 - A bug fix.
-      - Chore 👷‍♂️ - Maintenance or change to auxiliary tools.
-      - Add ➕ - Adding essentials to the repository (e.g. .gitignore or example files).
+      - Refactor 🧮 - Restructuring of the code without changing functionality
+      - Bugfix 🩹 - A bug fix.
+      - Chore 🧹 - Maintenance or change to auxiliary tools.
+      - Meta 👨‍💻 - Changes development files, but not product code (e.g. changes to .gitignore, workflows, readme...).
   validations:
     required: true
