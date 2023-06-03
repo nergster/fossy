@@ -17,7 +17,6 @@ env:
 
   unassigned: Unassigned ❕
   unlabeled: Unlabeled ❗
-  review_requested: Ready for Review 🔍
   docs: Docs 📝
   feat: Feat 🆕
   style: Style 🖌️
@@ -43,9 +42,9 @@ env:
 
   organization_name: nergster
   gh_token: ${{ secrets.ACCESS_TOKEN }}
-  gh_app_key: ${{ secrets.APP_SECRET_KEY }}
-  gh_app_id: ${{ secrets.APP_ID }}
-  gh_app_installation_id: ${{ secrets.APP_INSTALLATION_ID }}
+  # gh_app_key: ${{ secrets.APP_SECRET_KEY }}
+  # gh_app_id: ${{ secrets.APP_ID }}
+  # gh_app_installation_id: ${{ secrets.APP_INSTALLATION_ID }}
   project_number: 1
 
   # ----------------- apps/handles for github actions (ignore for now) ----------------- #
@@ -72,7 +71,6 @@ jobs:
       - name: summary (click to open)
         run: |
           echo "The job id is: ${{ env.job_id }}"
-          echo "The event id is: ${{ env.triggering_id }}"
           echo "The action id is: ${{ env.action_id }}"
           echo "The issue has been opened or reopened and moved to the ${{ env.backlog }} status field in the project. If no labels added, the ${{ env.unlabeled }} label is added. if it is unassigned, the ${{ env.unassigned }} label is added. When the issue is reopened, the ${{ env.backlog }} label is added and the ${{ env.done }} label is removed"
       - name: moves status value to ${{ env.backlog }} # step 1 
@@ -91,7 +89,7 @@ jobs:
         uses: LeDuble/labeler@master
         with:
           add-labels: ${{ env.unlabeled }}
-          ignore-if-labeled: true
+          # ignore-if-labeled: true # Add unlabeled to all new issues
 
       - name: If unassigned, adds {{ env.unassigned }} label # step 3
         uses: LeDuble/labeler@master
@@ -99,11 +97,17 @@ jobs:
           add-labels: ${{ env.unassigned }}
           ignore-if-assigned: true
 
-      - name: If reopened, adds ${{ env.backlog }} label and removes ${{ env.done }} label # step 4
+      - name: If reopened, removes ${{ env.done }} label # step 4
+        if: ${{ github.event.action == 'reopened' }}
         uses: LeDuble/labeler@master
         with:
-          add-labels: ${{ env.backlog }}
           remove-labels: ${{ env.done }}
+
+      - name: if linked to a pull request, adds ${{ env.in_progress }} label # step 5
+        if: ${{ github.event.issue.pull_request }}
+        uses: LeDuble/labeler@master
+        with:
+          add-labels: ${{ env.in_progress }}
 #------------------------------------------------------------------#
 
 #--------------------------------- ISSUE is CLOSED ---------------------------------#
@@ -120,7 +124,6 @@ jobs:
       - name: summary (click to open)
         run: |
           echo "The job id is: ${{ env.job_id }}"
-          echo "The event id is: ${{ env.triggering_id }}"
           echo "The action id is: ${{ env.action_id }}"
           echo "The issue has been closed, moved to the ${{ env.done }} status field in the project, and the ${{ env.done }} was added while the ${{ env.backlog }}, ${{ env.in_progress }}, ${{ env.ready_for_review }} labels were removed"
       - name: If closed, moves status value to ${{ env.done }} # step 1
@@ -156,22 +159,19 @@ jobs:
       - name: summary (click to open)
         run: |
           echo "The job id is: ${{ env.job_id }}"
-          echo "The event id is: ${{ env.triggering_id }}"
           echo "The action id is: ${{ env.action_id }}"
           echo "The issue has been either assigned or unassigned. When the issue is assigned, it is then moved to the ${{ env.backlog }} status field in the project, and the ${{ env.backlog }} is added while the ${{ env.unassigned }} label is removed. When the issue is unassigned it is then moved to the ${{ env.unassigned }} status field in the project, and the ${{ env.unassigned }} label is added while the ${{ env.backlog }} label is removed."
        
-      - name: If assigned, adds ${{ env.backlog }} label and removes ${{ env.unassigned }} label # condition 1
+      - name: If assigned, removes ${{ env.unassigned }} label # condition 1
         if: ${{ github.event.action == 'assigned' }}
         uses: LeDuble/labeler@master
         with:
-          add-labels: ${{ env.backlog }}
           remove-labels: ${{ env.unassigned }}
     
-      - name: If unassigned, adds ${{ env.unassigned }} label and removes ${{ env.backlog }} label # condition 2
+      - name: If unassigned, adds ${{ env.unassigned }} label # condition 2
         uses: LeDuble/labeler@master
         with:
           add-labels: ${{ env.unassigned }}
-          remove-labels: ${{ env.backlog }}
           ignore-if-assigned: true
 
 #--------------------------------- when ISSUE is LABELED ---------------------------------#
@@ -188,12 +188,11 @@ jobs:
       - name: summary (click to open)
         run: |
           echo "The job id is: ${{ env.job_id }}"
-          echo "The event id is: ${{ env.triggering_id }}"
           echo "The action id is: ${{ env.action_id }}"
           echo "The issue is labeled and moved to either ${{ env.in_progress }}, ${{ env.done }} or ${{ env.backlog }} status field in the project. The relevant status field is added and any unnecessary labels are removed. For example, if the ${{ env.backlog }} label is added, the issue is then moved to ${{ env.backlog }} status field in the project while the ${{ env.in_progress }}, ${{ env.done }} and ${{ env.ready_for_review }} labels are removed"
       
       - name: moves status value to ${{ env.in_progress }} # condition 1.1
-        if: ${{ github.event.label.name == 'In Progress 🚧' }} # label with name: status/in-progress
+        if: ${{ github.event.label.name == env.in_progress }} # label with name: status/in-progress
         uses: leonsteinhaeuser/project-beta-automations@v2.0.1
         with:
           gh_token: ${{ env.gh_token }}
@@ -205,13 +204,13 @@ jobs:
           resource_node_id: ${{ github.event.issue.node_id }}
           status_value: ${{ env.in_progress }}
       - name: adds ${{ env.in_progress }} label and removes ${{ env.done }}, ${{ env.backlog }}, ${{ env.ready_for_review }} labels # condition 1.2
-        if: ${{ github.event.label.name == 'In Progress 🚧' }}
+        if: ${{ github.event.label.name == env.in_progress }}
         uses: LeDuble/labeler@master
         with:
           remove-labels: ${{ env.done }}, ${{ env.backlog }}, ${{ env.ready_for_review }}
       
       - name: moves status value to ${{ env.done }} # condition 2.1
-        if: ${{ github.event.label.name == 'Done ✔️' }} # label with name: status/done
+        if: ${{ github.event.label.name == env.done }} # label with name: status/done
         uses: leonsteinhaeuser/project-beta-automations@v2.0.1
         with:
           gh_token: ${{ env.gh_token }}
@@ -223,13 +222,13 @@ jobs:
           resource_node_id: ${{ github.event.issue.node_id }}
           status_value: ${{ env.done }}
       - name: adds ${{ env.done }} label and removes ${{ env.in_progress }}, ${{ env.backlog }}, ${{ env.ready_for_review }} labels # condition 2.2
-        if: ${{ github.event.label.name == 'Done ✔️' }}
+        if: ${{ github.event.label.name == env.done }}
         uses: LeDuble/labeler@master
         with:
           remove-labels: ${{ env.in_progress }}, ${{ env.backlog }}, ${{ env.ready_for_review }}
 
       - name: moves status value to ${{ env.backlog }} # condition 3.1
-        if: ${{ github.event.label.name == 'Backlog 📜' }} # label with name: status/backlog
+        if: ${{ github.event.label.name == env.backlog }} # label with name: status/backlog
         uses: leonsteinhaeuser/project-beta-automations@v2.0.1
         with:
           gh_token: ${{ env.gh_token }}
@@ -241,7 +240,7 @@ jobs:
           resource_node_id: ${{ github.event.issue.node_id }}
           status_value: ${{ env.backlog }}
       - name: adds ${{ env.backlog }} label and removes ${{ env.in_progress }}, ${{ env.done }}, ${{ env.ready_for_review }} labels # condition 3.2
-        if: ${{ github.event.label.name == 'Backlog 📜' }}
+        if: ${{ github.event.label.name == env.backlog }}
         uses: LeDuble/labeler@master
         with:
           remove-labels: ${{ env.in_progress }}, ${{ env.done }}, ${{ env.ready_for_review }}
@@ -264,10 +263,9 @@ jobs:
       - name: summary (click to open)
         run: |
           echo "The job id is: ${{ env.job_id }}"
-          echo "The event id is: ${{ env.triggering_id }}"
           echo "The action id is: ${{ env.action_id }}"
-          echo "The pull request has been opened or reopened and moved to the ${{ env.ready_for_review }} status field in the project. If no labels added, the ${{ env.unlabeled }} label is added. if it is unassigned, the ${{ env.unassigned }} label is added. When the pull request is reopened, the ${{ env.ready_for_review }} label is added and the ${{ env.done }} label is removed"
-      - name: moves status value to ${{ env.ready_for_review }} # step 1 
+          echo "The pull request has been opened or reopened and moved to the ${{ env.in_progress }} status field in the project. If no labels added, the ${{ env.unlabeled }} label is added. if it is unassigned, the ${{ env.unassigned }} label is added. When the pull request is reopened, the ${{ env.in_progress }} label is added and the ${{ env.done }} label is removed"
+      - name: moves status value to ${{ env.in_progress }} # step 1 
         uses: leonsteinhaeuser/project-beta-automations@v2.0.1
         with:
           gh_token: ${{ env.gh_token }}
@@ -277,7 +275,7 @@ jobs:
           organization: ${{ env.organization_name }}
           project_id: ${{ env.project_number }}
           resource_node_id: ${{ github.event.pull_request.node_id }}
-          status_value: ${{ env.ready_for_review }}
+          status_value: ${{ env.in_progress }}
           
       - name: If unlabeled, adds {{ env.unlabeled }} label # step 2
         uses: LeDuble/labeler@master
@@ -291,10 +289,10 @@ jobs:
           add-labels: ${{ env.unassigned }}
           ignore-if-assigned: true
 
-      - name: If reopened, adds ${{ env.backlog }} label and removes ${{ env.done }} label # step 4
+      - name: If reopened, adds ${{ env.in_progress }} label and removes ${{ env.done }} label # step 4
         uses: LeDuble/labeler@master
         with:
-          add-labels: ${{ env.ready_for_review }}
+          add-labels: ${{ env.in_progress }}
           remove-labels: ${{ env.done }}
 
 #------------------------------------------------------------------#
@@ -306,27 +304,53 @@ jobs:
     env:
       job_id: pull request review requested or review request removed
       trigger_id: pull_request
-      action_id: review_requested or review_request_removed
+      action_id: review_requested or review_request_removed or ready_for_review or reviewed
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' && (github.event.action == 'review_requested' || github.event.action == 'review_request_removed') }}
+    if: ${{ github.event_name == 'pull_request' && (github.event.action == 'review_requested' || github.event.action == 'review_request_removed' || github.event.action == 'ready_for_review' || github.event.action == 'reviewed') }}
     steps:
       - name: summary (click to open)
         run: |
           echo "The job id is: ${{ env.job_id }}"
-          echo "The event id is: ${{ env.triggering_id }}"
           echo "The action id is: ${{ env.action_id }}"
-          echo "Review requested or review request removed. Accordingly added either ${{ env.review_requested }} label or removed it"
-      - name: If review requested, adds ${{ env.review_requested }} label # condition 1
-        if: ${{ github.event.action == 'review_requested' }}
+          echo "Review requested or review request removed. Accordingly added either ${{ env.ready_for_review }} label or removed it"
+
+      - name: moves status value to ${{ env.ready_for_review }} # condition 1.1
+        if: ${{ github.event.action == 'review_requested' || github.event.action == 'ready_for_review'}}
+        uses: leonsteinhaeuser/project-beta-automations@v2.0.1
+        with:
+          gh_token: ${{ env.gh_token }}
+          # gh_app_secret_key: ${{ env.gh_app_key }}
+          # gh_app_ID: ${{ env.gh_app_id }}
+          # gh_app_installation_ID: ${{ env.gh_app_installation_id }}
+          organization: ${{ env.organization_name }}
+          project_id: ${{ env.project_number }}
+          resource_node_id: ${{ github.event.issue.node_id }}
+          status_value: ${{ env.ready_for_review }}
+      - name: If review requested, adds ${{ env.ready_for_review }} label # condition 1.2
+        if: ${{ github.event.action == 'review_requested' || github.event.action == 'ready_for_review'}}
         uses: LeDuble/labeler@master
         with:
-          add-labels: ${{ env.review_requested }}
+          add-labels: ${{ env.ready_for_review }}
+          remove-labels: ${{ env.in_progress }}
       
-      - name: If review request removed, removes ${{ env.review_requested }} label # condition 2
-        if: ${{ github.event.action == 'review_request_removed' }}
+      - name: moves status value to ${{ env.backlog }} # condition 2.1
+        if: ${{ github.event.action == 'review_request_removed' || github.event.action == 'reviewed'}}
+        uses: leonsteinhaeuser/project-beta-automations@v2.0.1
+        with:
+          gh_token: ${{ env.gh_token }}
+          # gh_app_secret_key: ${{ env.gh_app_key }}
+          # gh_app_ID: ${{ env.gh_app_id }}
+          # gh_app_installation_ID: ${{ env.gh_app_installation_id }}
+          organization: ${{ env.organization_name }}
+          project_id: ${{ env.project_number }}
+          resource_node_id: ${{ github.event.issue.node_id }}
+          status_value: ${{ env.in_progress }}
+      - name: If review request removed, removes ${{ env.ready_for_review }} label # condition 2.2
+        if: ${{ github.event.action == 'review_request_removed' || github.event.action == 'reviewed'}}
         uses: LeDuble/labeler@master
         with:
-          remove-labels: ${{ env.review_requested }}
+          remove-labels: ${{ env.ready_for_review }}
+          add-labels: ${{ env.in_progress }}
 
 #------------------------------------------------------------------#
 
@@ -344,7 +368,6 @@ jobs:
       - name: summary (click to open)
         run: |
           echo "The job id is: ${{ env.job_id }}"
-          echo "The event id is: ${{ env.triggering_id }}"
           echo "The action id is: ${{ env.action_id }}"
           echo "The pull request has been closed, moved to the ${{ env.done }} status field in the project, and the ${{ env.done }} was added while the ${{ env.backlog }}, ${{ env.in_progress }}, ${{ env.ready_for_review }} labels were removed"
       
@@ -382,11 +405,10 @@ jobs:
       - name: summary (click to open)
         run: |
           echo "The job id is: ${{ env.job_id }}"
-          echo "The event id is: ${{ env.triggering_id }}"
           echo "The action id is: ${{ env.action_id }}"
           echo "The pull request has been either assigned or unassigned. When the pull request is assigned, it is then moved to the ${{ env.ready_for_review }} status field in the project, and the ${{ env.ready_for_review }} is added while the ${{ env.unassigned }} label is removed. When the pull request is unassigned it is then moved to the ${{ env.unassigned }} status field in the project, and the ${{ env.unassigned }} label is added while the ${{ env.ready_for_review }} label is removed."
       
-      - name: if assigned, moves status value to ${{ env.backlog }} # condition 1.1
+      - name: if assigned, moves status value to ${{ env.in_progress }} # condition 1.1
         if: ${{ github.event.action == 'assigned' }} # label with name: status/backlog
         uses: leonsteinhaeuser/project-beta-automations@v2.0.1
         with:
@@ -397,12 +419,12 @@ jobs:
           organization: ${{ env.organization_name }}
           project_id: ${{ env.project_number }}
           resource_node_id: ${{ github.event.pull_request.node_id }}
-          status_value: ${{ env.ready_for_review }}         
-      - name: If assigned, adds ${{ env.ready_for_review }} label and removes ${{ env.unassigned }} label # condition 1.2
+          status_value: ${{ env.in_progress }}         
+      - name: If assigned, adds ${{ env.in_progress}} label and removes ${{ env.unassigned }} label # condition 1.2
         if: ${{ github.event.action == 'assigned' }}
         uses: LeDuble/labeler@master
         with:
-          add-labels: ${{ env.ready_for_review }}
+          add-labels: ${{ env.in_progress }}
           remove-labels: ${{ env.unassigned }}
   
       - name: If unassigned, adds ${{ env.unassigned }} label # condition 2
