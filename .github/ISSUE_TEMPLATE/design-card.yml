@@ -1,6 +1,6 @@
 # ----------- default settings ----------- #
 name: Design card template
-description: Use this when opening a design-related issue or feature.
+description: Used for artistic/stylistic issues.
 title: "[Design]: "
 labels: [Design 🎨]
 # ----------- optional setting ----------- #
@@ -20,16 +20,14 @@ body:
     label: Prerequisites
     description: Please make sure you have read and completed all the following.
     options:
-      - label: I have read the [Git Etiquette](https://github.com/nergster/Git-Etiquette). (Required)
+      - label: I have read the [Contributing Guidelines](https://github.com/nergster/fossy/blob/main/CONTRIBUTING.md).
         required: true
-      - label: I agree to follow the [Code of Conduct](). (Required)
+      - label: I agree to follow the [Code of Conduct](https://github.com/nergster/fossy/blob/main/CODE_OF_CONDUCT.md).
         required: true
-      - label: Are you intending to include tests? (Optional)
-        required: false
 
 - type: textarea
   attributes:
-    label: Summary (Required)
+    label: Summary
     description: Please provide a brief description of the feature.
     placeholder: |
       Example: "section b have outdated links that don't work"
@@ -38,7 +36,7 @@ body:
 
 - type: textarea
   attributes:
-    label: Potential Solution (Required)
+    label: Potential Solution
     description: Explain in brief how you intend to tackle the issue.
     placeholder: |
       example: "add updated links to section b"
@@ -47,7 +45,7 @@ body:
 
 - type: textarea
   attributes:
-    label: Media (Optional)
+    label: Media
     description: Include your media here that is related to the issue. Good examples of media to include here are screenshots or images.
     placeholder: |
       example: ""
@@ -56,7 +54,7 @@ body:
 
 - type: dropdown
   attributes:
-    label: In which category does the issue belong? (Required)
+    label: In which category does the issue belong?
     description: Pick one that describe the issue.
     multiple: false
     options:
