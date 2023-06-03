@@ -20,7 +20,7 @@ body:
     label: Prerequisites
     description: Please make sure you have read and completed all the following.
     options:
-      - label: I have read the [Git Etiquette](https://github.com/LeDuble/Git-Etiquette). (Required)
+      - label: I have read the [Git Etiquette](https://github.com/nergster/Git-Etiquette). (Required)
         required: true
       - label: I agree to follow the [Code of Conduct](). (Required)
         required: true
