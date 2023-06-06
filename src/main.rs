@@ -22,39 +22,39 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_startup_system(setup)
-        .add_system(sprite_movement)
+        .add_system(player_movement)
         .run();
 }
 
 #[derive(Component)]
-enum Direction {
-    Left,
-    Right,
-}
+struct Player;
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle::default());
     commands.spawn((
+        Player,
         SpriteBundle {
             texture: asset_server.load("textures/icon.png"),
             transform: Transform::from_xyz(100., 0., 0.),
             ..default()
         },
-        Direction::Right,
     ));
 }
 
-fn sprite_movement(time: Res<Time>, mut sprite_position: Query<(&mut Direction, &mut Transform)>) {
-    for (mut logo, mut transform) in &mut sprite_position {
-        match *logo {
-            Direction::Right => transform.translation.x += 30. * time.delta_seconds(),
-            Direction::Left => transform.translation.x -= 30. * time.delta_seconds(),
-        }
-
-        if transform.translation.x > 200. {
-            *logo = Direction::Left;
-        } else if transform.translation.x < -200. {
-            *logo = Direction::Right;
+fn player_movement(
+    time: Res<Time>,
+    mut player: Query<(&Player, &mut Transform)>,
+    input: Res<Input<KeyCode>>,
+) {
+    for (_player, mut transform) in &mut player {
+        for key_code in input.get_pressed() {
+            match *key_code {
+                KeyCode::Right => transform.translation.x += 100. * time.delta_seconds(),
+                KeyCode::Left => transform.translation.x -= 100. * time.delta_seconds(),
+                KeyCode::Up => transform.translation.y += 100. * time.delta_seconds(),
+                KeyCode::Down => transform.translation.y -= 100. * time.delta_seconds(),
+                _ => (),
+            }
         }
     }
 }
